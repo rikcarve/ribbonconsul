@@ -1,5 +1,6 @@
 package carve.ribbonconsul;
 
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 
 import javax.annotation.PostConstruct;
@@ -7,6 +8,9 @@ import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 
+import com.fasterxml.jackson.core.JsonParseException;
+import com.fasterxml.jackson.databind.JsonMappingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.ribbon.ClientOptions;
 import com.netflix.ribbon.Ribbon;
 import com.netflix.ribbon.http.HttpRequestTemplate;
@@ -61,11 +65,10 @@ public class RibbonConsulResource {
     @GET
     @Path("world")
     @Produces("text/plain")
-    public String world() {
+    public String world() throws JsonParseException, JsonMappingException, IOException {
         ByteBuf resp = worldTemplate.requestBuilder().build().execute();
-
-        // ByteBuf resp = helloProxy.sayWorld().execute();
-        return resp.toString(StandardCharsets.ISO_8859_1);
+        ObjectMapper mapper = new ObjectMapper();
+        return mapper.readValue(resp.array(), World.class).getHelloWorld();
     }
 
 }
