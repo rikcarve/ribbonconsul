@@ -68,7 +68,7 @@ public class RibbonConsulResource {
     public String world() throws JsonParseException, JsonMappingException, IOException {
         ByteBuf resp = worldTemplate.requestBuilder().build().execute();
         ObjectMapper mapper = new ObjectMapper();
-        return mapper.readValue(resp.array(), World.class).getHelloWorld();
+        return mapper.readValue(resp.toString(StandardCharsets.ISO_8859_1), World.class).getHelloWorld();
     }
 
 }
