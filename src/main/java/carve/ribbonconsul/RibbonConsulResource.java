@@ -13,12 +13,16 @@ import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.ribbon.ClientOptions;
+import com.netflix.ribbon.ResponseValidator;
 import com.netflix.ribbon.Ribbon;
+import com.netflix.ribbon.ServerError;
+import com.netflix.ribbon.UnsuccessfulResponseException;
 import com.netflix.ribbon.http.HttpRequestBuilder;
 import com.netflix.ribbon.http.HttpRequestTemplate;
 import com.netflix.ribbon.http.HttpResourceGroup;
 
 import io.netty.buffer.ByteBuf;
+import io.reactivex.netty.protocol.http.client.HttpClientResponse;
 
 @Path("/ribbon")
 public class RibbonConsulResource {
@@ -34,20 +38,32 @@ public class RibbonConsulResource {
                     .withMaxAutoRetriesNextServer(2)
                     .withConnectTimeout(10000)
                     .withReadTimeout(5000)
-                    .withMaxConnectionsPerHost(2)
-                    .withMaxTotalConnections(12));
+                    .withLoadBalancerEnabled(true)
+                    .withMaxConnectionsPerHost(10)
+                    .withMaxTotalConnections(20));
 
     @SuppressWarnings("unchecked")
-    static HttpRequestTemplate<ByteBuf> helloTemplate = httpResourceGroup.newTemplateBuilder("helloTemplate", ByteBuf.class)
+    HttpRequestTemplate<ByteBuf> helloTemplate = httpResourceGroup
+            .newTemplateBuilder("helloTemplate", ByteBuf.class)
             .withMethod("GET")
             .withUriTemplate("/hello/v1/hello/")
             .withFallbackProvider(new HelloFallback())
             .build();
 
     @SuppressWarnings("unchecked")
-    static HttpRequestTemplate<ByteBuf> worldTemplate = httpResourceGroup.newTemplateBuilder("worldTemplate", ByteBuf.class)
+    HttpRequestTemplate<ByteBuf> worldTemplate = httpResourceGroup
+            .newTemplateBuilder("worldTemplate", ByteBuf.class)
             .withMethod("GET")
             .withUriTemplate("/hello/v1/hello/world")
+            .withResponseValidator(new ResponseValidator<HttpClientResponse<ByteBuf>>() {
+                @Override
+                public void validate(HttpClientResponse<ByteBuf> response)
+                        throws UnsuccessfulResponseException, ServerError {
+                    if (response.getStatus().code() >= 500) {
+                        throw new ServerError(response.getStatus().reasonPhrase());
+                    }
+                }
+            })
             .build();
 
     @GET
