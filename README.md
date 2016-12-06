@@ -53,12 +53,17 @@ Client side loadbalancing through ribbon and consul
 ```
 
 ## Maven config
-
-		<dependency>
-			<groupId>com.orbitz.consul</groupId>
-			<artifactId>consul-client</artifactId>
-			<version>0.12.8</version>
-		</dependency>		
+```xml
+    <properties>
+        <ribbon.version>2.2.2</ribbon.version>
+	<hystrix.version>1.4.3</hystrix.version>
+	<jackson.version>2.4.3</jackson.version>
+    </properties>
+    <dependency>
+        <groupId>com.orbitz.consul</groupId>
+        <artifactId>consul-client</artifactId>
+        <version>0.12.8</version>
+    </dependency>		
         
         <dependency>
             <groupId>com.netflix.hystrix</groupId>
@@ -120,3 +125,4 @@ Client side loadbalancing through ribbon and consul
         	<artifactId>jackson-databind</artifactId>
         	<version>${jackson.version}</version>
         </dependency>
+```
