@@ -3,10 +3,14 @@ Client side loadbalancing through ribbon and consul
 
 ## Client
 ```java
+    private ObjectMapper mapper = new ObjectMapper();
+    
+    // set class for dynamic server list
     static {
         System.setProperty("ribbon.NIWSServerListClassName", "carve.ribbonconsul.ConsulServerList");
     }
 
+    // create resource group for remote target (this can be static)
     static HttpResourceGroup httpResourceGroup = Ribbon.createHttpResourceGroup("hello",
             ClientOptions.create()
                     .withMaxAutoRetriesNextServer(2)
@@ -15,7 +19,8 @@ Client side loadbalancing through ribbon and consul
                     .withLoadBalancerEnabled(true)
                     .withMaxConnectionsPerHost(10)
                     .withMaxTotalConnections(20));
-
+    
+    // create template for request (per method)
     @SuppressWarnings("unchecked")
     HttpRequestTemplate<ByteBuf> worldTemplate = httpResourceGroup
             .newTemplateBuilder("worldTemplate", ByteBuf.class)
@@ -32,6 +37,19 @@ Client side loadbalancing through ribbon and consul
                 }
             })
             .build();
+	    
+    // call target (always returns ByteBuf, so we need to use Json object mapper directly
+    ByteBuf resp = requestBuilderWithHeaders(worldTemplate).build().execute();
+    World world = mapper.readValue(resp.toString(StandardCharsets.ISO_8859_1), World.class);
+    
+    // helper method to add MDC in request header
+    public static HttpRequestBuilder<ByteBuf> requestBuilderWithHeaders(HttpRequestTemplate<ByteBuf> template) {
+        HttpRequestBuilder<ByteBuf> builder = template.requestBuilder();
+        MDC.getCopyOfContextMap().forEach((k, v) -> builder.withHeader("X-MDC-" + k, v));
+        return builder;
+    }
+
+    
 ```
 
 ## Maven config
